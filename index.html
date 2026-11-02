@@ -421,19 +421,24 @@
     .ev {
       display: grid;
       grid-template-columns: 34px minmax(0, 1fr) auto;
-      grid-template-areas: "ico main dur" "ico soc soc" "ico meta meta";
+      grid-template-areas: "ico main dur" "ico soc soc" "ico meta meta" "det det det";
       column-gap: 12px;
       row-gap: 6px;
       align-items: center;
       padding: 13px 14px;
       border-top: 1px solid rgba(255, 255, 255, 0.05);
+      cursor: pointer;
+      -webkit-user-select: none;
+      user-select: none;
     }
+    .ev:focus-visible { outline: 2px solid var(--green-glow); outline-offset: -2px; }
+    .ev.open { background: rgba(255, 255, 255, 0.025); }
     .ev:first-child { border-top: 0; }
     .ev-ico { grid-area: ico; align-self: start; width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; }
     .ev.discharge .ev-ico { background: var(--orange-dim); color: var(--orange-wave); }
     .ev.charge .ev-ico { background: var(--green-dim); color: var(--green-glow); }
     .ev-main { grid-area: main; min-width: 0; }
-    .ev-type { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; font-weight: 700; color: #ffffff; }
+    .ev-type { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; font-size: 0.9rem; font-weight: 700; color: #ffffff; }
     .ev-live { font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; padding: 2px 7px; border-radius: 999px; }
     .ev.discharge .ev-live { background: var(--orange-dim); color: var(--orange-wave); }
     .ev.charge .ev-live { background: var(--green-dim); color: var(--green-glow); }
@@ -446,6 +451,29 @@
     .ev.charge .ev-bar i { background: var(--green-glow); }
     .ev-soc { font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; font-weight: 600; color: #ffffff; white-space: nowrap; }
     .ev-meta { grid-area: meta; font-size: 0.74rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ev-chev { display: inline-block; margin-left: 6px; color: var(--text-dim); font-family: 'Plus Jakarta Sans', sans-serif; transition: transform 0.2s ease; }
+    .ev.open .ev-chev { transform: rotate(90deg); color: #ffffff; }
+
+    /* Detalle al tocar un evento */
+    .ev-detail {
+      grid-area: det;
+      display: none;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px 10px;
+      margin-top: 6px;
+      padding: 12px 14px;
+      background: var(--card-bg-sub);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: var(--radius-sm);
+      cursor: default;
+      -webkit-user-select: text;
+      user-select: text;
+    }
+    .ev.open .ev-detail { display: grid; }
+    .evd-k { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-dim); }
+    .evd-v { margin-top: 3px; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; font-weight: 700; color: #ffffff; }
+    .evd-v small { font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+    .ev-live { white-space: nowrap; }
 
     /* Modal Settings */
     .modal-wrap {
@@ -640,11 +668,12 @@
       #view-st .st-kpi span { margin-top: 0; text-align: right; }
       #view-st .ev {
         grid-template-columns: 34px minmax(170px, 1.1fr) minmax(170px, 1fr) minmax(150px, 0.8fr) 104px;
-        grid-template-areas: "ico main soc meta dur";
+        grid-template-areas: "ico main soc meta dur" "det det det det det";
         column-gap: 20px;
         padding: 14px 18px;
       }
       #view-st .ev-dur { align-self: center; }
+      #view-st .ev-detail { grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 6px 0 2px 54px; }
       #view-st .ev:hover { background: rgba(255, 255, 255, 0.02); }
 
       /* Modal de ajustes más cómodo */
@@ -1655,18 +1684,75 @@ function sessionRow(s) {
   const meta = [fmtEnergy(s.energy_wh)];
   if (s.max_power_w) meta.push('pico ' + Math.round(s.max_power_w) + ' W');
 
-  return '<div class="ev ' + cls + '">' +
+  const key = sessionKey(s);
+  const open = histOpen.has(key);
+
+  // Detalle (se ve al tocar la fila)
+  const cells = [];
+  const cell = function (k, v) { cells.push('<div><div class="evd-k">' + k + '</div><div class="evd-v">' + v + '</div></div>'); };
+  const longDate = function (d) { return DIAS_SEMANA[d.getDay()].slice(0, 3) + ' ' + shortDate(d) + ' <small>' + hhmm(d) + '</small>'; };
+  cell('Empezó', start ? longDate(start) : '—');
+  cell(live ? 'Sigue' : 'Terminó', end ? longDate(end) : (live ? 'en curso' : '—'));
+  cell('Duración', fmtDur(s.duration_sec));
+  if (z !== null) {
+    const delta = z - a;
+    cell('Batería', Math.round(a) + '% → ' + Math.round(z) + '% <small>(' + (delta >= 0 ? '+' : '−') + Math.abs(Math.round(delta)) + ' %)</small>');
+    const hours = (s.duration_sec || 0) / 3600;
+    if (hours >= 1 / 6 && Math.abs(delta) >= 1) {
+      cell('Ritmo', (delta >= 0 ? '+' : '−') + fmtNum(Math.abs(delta) / hours, 1) + ' %/h');
+    }
+  } else {
+    cell('Batería', Math.round(a) + '% al empezar');
+  }
+  cell('Energía', fmtEnergy(s.energy_wh));
+  if (s.avg_power_w) cell('Potencia media', Math.round(s.avg_power_w) + ' W');
+  if (s.max_power_w) cell('Potencia pico', Math.round(s.max_power_w) + ' W');
+  if (s.start_voltage) {
+    cell('Voltaje', fmtNum(s.start_voltage, 1) + ' V' + (s.end_voltage ? ' → ' + fmtNum(s.end_voltage, 1) + ' V' : ''));
+  }
+
+  return '<div class="ev ' + cls + (open ? ' open' : '') + '" tabindex="0" role="button" aria-expanded="' + open + '" data-key="' + key + '">' +
     '<div class="ev-ico">' + (isDisc ? EV_ICON_CUT : EV_ICON_CHARGE) + '</div>' +
     '<div class="ev-main">' +
       '<div class="ev-type">' + (isDisc ? 'Corte de luz' : 'Recarga') + (live ? '<span class="ev-live">En curso</span>' : '') + '</div>' +
       '<div class="ev-when">' + when + '</div>' +
     '</div>' +
-    '<div class="ev-dur">' + fmtDur(s.duration_sec) + '</div>' +
+    '<div class="ev-dur">' + fmtDur(s.duration_sec) + '<span class="ev-chev">›</span></div>' +
     '<div class="ev-socrow"><div class="ev-bar"><i style="left:' + lo.toFixed(1) + '%;width:' + Math.max(1.5, hi - lo).toFixed(1) + '%"></i></div>' +
       '<span class="ev-soc">' + socTxt + '</span></div>' +
     '<div class="ev-meta">' + meta.join(' · ') + '</div>' +
+    '<div class="ev-detail">' + cells.join('') + '</div>' +
   '</div>';
 }
+
+// Identificador estable de un evento (para recordar cuáles están desplegados)
+function sessionKey(s) {
+  return String(s.session_type || '') + '|' + String(s.start_time || '').replace(/[^0-9]/g, '');
+}
+const histOpen = new Set();
+
+function toggleEvent(row) {
+  const key = row.getAttribute('data-key');
+  const open = !row.classList.contains('open');
+  row.classList.toggle('open', open);
+  row.setAttribute('aria-expanded', String(open));
+  if (open) histOpen.add(key); else histOpen.delete(key);
+}
+
+(function () {
+  const box = document.getElementById('sessions-box');
+  if (!box) return;
+  box.addEventListener('click', function (e) {
+    if (e.target.closest('.ev-detail')) return;          // dejar seleccionar texto del detalle
+    const row = e.target.closest('.ev');
+    if (row) toggleEvent(row);
+  });
+  box.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const row = e.target.closest('.ev');
+    if (row && e.target === row) { e.preventDefault(); toggleEvent(row); }
+  });
+})();
 
 function renderSessions() {
   const box = document.getElementById('sessions-box');
