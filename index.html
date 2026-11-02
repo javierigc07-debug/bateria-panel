@@ -826,6 +826,13 @@
                   color: var(--text-muted); margin-bottom: 10px; cursor: pointer; }
     .lock-check input { width: 18px; height: 18px; accent-color: var(--green-glow); }
     .lock-err { font-size: 0.8rem; color: #ff8585; text-align: center; margin-top: 10px; min-height: 1em; }
+    /* ── Avisos en el móvil ── */
+    .hdr-actions { display: flex; align-items: center; gap: 8px; }
+    .settings-btn.push-on { border-color: var(--green-glow); box-shadow: 0 0 10px rgba(0, 255, 136, 0.25); }
+    .push-txt { font-size: 0.85rem; color: var(--text-muted); line-height: 1.55; margin-bottom: 14px; }
+    .push-state { font-size: 0.8rem; text-align: center; min-height: 1.2em; margin: 4px 0 10px; line-height: 1.45; }
+    .f-btn.push-sec { background: #20242e; color: #fff; }
+    .f-btn:disabled { opacity: 0.6; cursor: progress; }
     .disconnected-banner.stale { background: rgba(255, 152, 0, 0.08); border-color: rgba(255, 152, 0, 0.3); }
     .disconnected-banner.stale .db-text { color: #ffc266; }
   </style>
@@ -871,7 +878,7 @@
       </div>
       <span class="last-sync" id="last-sync"></span>
     </div>
-    <div class="settings-btn" id="btn-settings" title="Ajustes">⚙️</div>
+    <div class="hdr-actions"><div class="settings-btn" id="btn-push" title="Avisos en el móvil">🔔</div><div class="settings-btn" id="btn-settings" title="Ajustes">⚙️</div></div>
   </header>
 
   <!-- Curva Sutil Ambiental -->
@@ -1553,8 +1560,14 @@ function updateUI(d) {
 
     // Widgets
     document.getElementById('val-v').textContent = Number(d.voltage_v).toFixed(2);
+    // El BMS da la corriente con signo (negativa = descarga): se muestra el valor
+    // y el sentido va en la etiqueta, con el mismo umbral que el resto del sistema.
     const cur = Number(d.current_a || 0);
-    document.getElementById('val-curr').textContent = (cur >= 0 ? '+' : '') + cur.toFixed(2);
+    const tagCurr = document.getElementById('tag-curr');
+    document.getElementById('val-curr').textContent = Math.abs(cur).toFixed(2);
+    if (cur < -0.3)     { tagCurr.textContent = 'DESCARGANDO'; tagCurr.style.color = 'var(--orange-wave)'; }
+    else if (cur > 0.3) { tagCurr.textContent = 'CARGANDO';    tagCurr.style.color = 'var(--green-glow)'; }
+    else                { tagCurr.textContent = 'REPOSO';      tagCurr.style.color = ''; }
     document.getElementById('val-t').textContent = Number(d.temp1_c || 0).toFixed(1);
     document.getElementById('val-cyc').textContent = d.cycles || 0;
 
@@ -1593,6 +1606,8 @@ function updateUI(d) {
 
     document.getElementById('val-v').textContent = '--';
     document.getElementById('val-curr').textContent = '--';
+    document.getElementById('tag-curr').textContent = 'ESTADO';
+    document.getElementById('tag-curr').style.color = '';
     document.getElementById('val-t').textContent = '--';
     document.getElementById('val-cyc').textContent = '--';
   }
@@ -2011,6 +2026,20 @@ function connectLive() {
 // (arranque: lo hace el script del panel remoto, más abajo)
 </script>
 
+<div class="modal-wrap" id="modal-push">
+  <div class="modal-box">
+    <div class="m-head">
+      <div class="m-title">🔔 Avisos en el móvil</div>
+      <button class="m-close" id="push-close" type="button">✕</button>
+    </div>
+    <p class="push-txt">Te avisa como cualquier app, aunque esté cerrada: <b>⚡ se fue la luz</b>,
+      <b>✅ volvió la luz</b>, <b>🔋 baterías cargadas</b> y <b>⚠️ batería baja</b>.</p>
+    <div class="push-state" id="push-state"></div>
+    <button class="f-btn" id="push-toggle" type="button">🔔 Activar avisos</button>
+    <button class="f-btn push-sec" id="push-test" type="button">Enviar aviso de prueba</button>
+  </div>
+</div>
+
 <script>
 /* ═══════════════════════════════════════════════════════════════
    PANEL REMOTO — datos del Gist cifrado en lugar de la Raspberry
@@ -2082,6 +2111,7 @@ function connectLive() {
   const LIVE_BROKERS   = ["wss://broker.emqx.io:8084/mqtt", "wss://broker.hivemq.com:8884/mqtt"];
   const LIVE_FRESH_SEC = 40;               // la Pi manda cada 5 s (cada 30 s si el BMS no responde)
   const liveConns = [], liveTimers = [], liveDelay = [];
+  const liveOutbox = new Map();            // tema → mensaje retenido que debe llegar a la Pi
   let liveTopic = null;
   const mq = {
     str(s) { const b = new TextEncoder().encode(s); return [b.length >> 8, b.length & 255].concat(Array.from(b)); },
@@ -2103,6 +2133,7 @@ function connectLive() {
     if (!live || !live.ts || (LIVE && live.ts <= LIVE.ts)) return;   // llega por los dos servidores
     LIVE = live;
     if (SNAP && !document.body.classList.contains("locked")) { updateUI(current()); renderFreshness(); }
+    pushMaybeRefresh();
   }
   function liveConnect(slot) {
     let ws, buf = new Uint8Array(0), ping = null;
@@ -2122,7 +2153,9 @@ function connectLive() {
         if (head >> 4 === 2) {             // CONNACK
           if (body[1] !== 0) return ws.close();
           liveDelay[slot] = 0;
+          ws._ready = true;
           ws.send(mq.pkt(0x82, [0, 1].concat(mq.str(liveTopic), [0])));
+          liveOutbox.forEach((bytes, topic) => liveSendTo(ws, topic, bytes));
           ping = setInterval(() => { try { ws.send(new Uint8Array([0xc0, 0])); } catch (err) {} }, 45000);
         } else if (head >> 4 === 3) {      // PUBLISH
           const tl = (body[0] << 8) | body[1];
@@ -2135,6 +2168,13 @@ function connectLive() {
       clearInterval(ping);
       if (liveConns[slot] === ws) { liveConns[slot] = null; liveRetry(slot); }
     };
+  }
+  function liveSendTo(ws, topic, bytes) {
+    try { ws.send(mq.pkt(0x31, mq.str(topic).concat(Array.from(bytes)))); } catch (e) {}   // PUBLISH retenido
+  }
+  function livePublish(topic, bytes) {
+    liveOutbox.set(topic, bytes);
+    liveConns.forEach((ws) => { if (ws && ws._ready) liveSendTo(ws, topic, bytes); });
   }
   function liveRetry(slot) {
     if (!keyBytes || liveTimers[slot]) return;
@@ -2153,10 +2193,125 @@ function connectLive() {
   function liveStop() {
     liveConns.forEach((ws, i) => { liveConns[i] = null; try { if (ws) ws.close(); } catch (e) {} });
     liveTimers.forEach((t) => clearTimeout(t));
-    liveTimers.length = 0; liveDelay.length = 0;
-    LIVE = null; liveTopic = null;
+    liveTimers.length = 0; liveDelay.length = 0; liveOutbox.clear();
+    LIVE = null; liveTopic = null; pushRefreshed = false;
   }
   const liveFresh = () => !!(LIVE && Date.now() / 1000 - LIVE.ts < LIVE_FRESH_SEC);
+
+  // ── Avisos en el móvil (Web Push, ver web_push.py) ──
+  const K_DEV = "bateria-panel:device", K_PUSH = "bateria-panel:push";
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const standalone = () => window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  const pushOk = () => "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+  const pushKey = () => (LIVE && LIVE.push_key) || (SNAP && SNAP.push_key) || null;
+  const b64u = (s) => b64dec(s.replace(/-/g, "+").replace(/_/g, "/"));
+  const nowSec = () => Math.floor(Date.now() / 1000);
+  let swReg = null, pushRefreshed = false;
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").then((r) => { swReg = r; }).catch(() => {});
+
+  function deviceId() {
+    let id = store.get(K_DEV);
+    if (!/^[0-9a-f]{16}$/.test(id || "")) {
+      id = Array.from(crypto.getRandomValues(new Uint8Array(8)), (b) => b.toString(16).padStart(2, "0")).join("");
+      store.set(K_DEV, id);
+    }
+    return id;
+  }
+  function deviceName() {
+    const ua = navigator.userAgent;
+    return /iPhone/.test(ua) ? "iPhone" : /iPad/.test(ua) ? "iPad" : /Android/.test(ua) ? "Android"
+      : /Macintosh/.test(ua) ? "Mac" : /Windows/.test(ua) ? "Windows" : "Navegador";
+  }
+  async function encryptForPi(obj) {
+    const key = await crypto.subtle.importKey("raw", keyBytes, "AES-GCM", false, ["encrypt"]);
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, key, new TextEncoder().encode(JSON.stringify(obj))));
+    return new TextEncoder().encode(JSON.stringify({ v: 1, iv: b64enc(iv), ct: b64enc(ct) }));
+  }
+  // Mensaje cifrado a la Pi (tema propio de este móvil, retenido)
+  async function pushSend(extra) {
+    if (!liveTopic) await liveStart();
+    if (!liveTopic) throw PanelError("push", "Sin conexión con el canal en directo. Prueba en un momento.");
+    const msg = Object.assign({ id: deviceId(), name: deviceName(), ts: nowSec() }, extra);
+    livePublish(liveTopic + "/subs/" + deviceId(), await encryptForPi(msg));
+  }
+  async function pushReg() { return swReg || navigator.serviceWorker.ready; }
+  async function pushSubscription() { return pushOk() ? (await pushReg()).pushManager.getSubscription() : null; }
+  // Suscripción con la clave actual de la Pi (si cambió, se rehace)
+  async function pushEnsure(key) {
+    const reg = await pushReg();
+    let sub = await reg.pushManager.getSubscription();
+    const cur = sub && sub.options && sub.options.applicationServerKey;
+    if (cur && b64enc(new Uint8Array(cur)) !== b64enc(b64u(key))) { await sub.unsubscribe(); sub = null; }
+    return sub || reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64u(key) });
+  }
+  async function pushEnable() {
+    const key = pushKey();
+    if (!key) throw PanelError("push", "La Raspberry todavía no tiene los avisos: actualízala y vuelve a intentarlo.");
+    const perm = await Notification.requestPermission();   // tiene que ir lo primero tras el toque (iOS)
+    if (perm !== "granted") throw PanelError("push", isIOS
+      ? "Avisos bloqueados. Actívalos en Ajustes del iPhone → Notificaciones → Baterías."
+      : "Avisos bloqueados. Permítelos en los ajustes del navegador para esta web.");
+    const sub = await pushEnsure(key);
+    store.set(K_PUSH, "on");
+    await pushSend({ sub: sub.toJSON(), test: nowSec() });   // la Pi responde con un aviso de prueba
+  }
+  async function pushDisable() {
+    const sub = await pushSubscription();
+    if (sub) await sub.unsubscribe().catch(() => {});
+    store.del(K_PUSH);
+    await pushSend({ off: true });
+  }
+  // Al abrir la app: recordarle a la Pi este móvil (por si el servidor MQTT lo olvidó)
+  function pushMaybeRefresh() {
+    if (pushRefreshed || !pushKey() || store.get(K_PUSH) !== "on" || !pushOk() || Notification.permission !== "granted") return;
+    pushRefreshed = true;
+    pushEnsure(pushKey()).then((sub) => pushSend({ sub: sub.toJSON() })).catch(() => { pushRefreshed = false; });
+  }
+  async function pushRender(msg, isErr) {
+    const st = $("push-state"), tg = $("push-toggle"), ts = $("push-test");
+    st.style.color = isErr ? "#ff8585" : "";
+    if (!pushOk()) {
+      tg.style.display = "none"; ts.style.display = "none";
+      st.textContent = isIOS && !standalone()
+        ? "En iPhone, primero instala la app: botón Compartir → «Añadir a pantalla de inicio», y ábrela desde el icono."
+        : "Este navegador no admite avisos. Usa Chrome en Android, o la app instalada en iPhone (iOS 16.4 o más nuevo).";
+      return;
+    }
+    let on = false;
+    try { on = store.get(K_PUSH) === "on" && Notification.permission === "granted" && !!(await pushSubscription()); } catch (e) {}
+    tg.style.display = "";
+    tg.textContent = on ? "🔕 Desactivar avisos" : "🔔 Activar avisos";
+    tg.dataset.on = on ? "1" : "";
+    ts.style.display = on ? "" : "none";
+    $("btn-push").classList.toggle("push-on", on);
+    st.textContent = msg || (on ? "✓ Avisos activados en este móvil."
+      : Notification.permission === "denied" ? "Avisos bloqueados en este móvil: actívalos en sus ajustes."
+      : "Avisos desactivados en este móvil.");
+  }
+  $("btn-push").onclick = () => { $("modal-push").classList.add("open"); pushRender(); };
+  $("push-close").onclick = () => $("modal-push").classList.remove("open");
+  $("modal-push").addEventListener("click", (e) => { if (e.target.id === "modal-push") $("modal-push").classList.remove("open"); });
+  $("push-toggle").onclick = async () => {
+    const btn = $("push-toggle");
+    const wasOn = !!btn.dataset.on;
+    btn.disabled = true;
+    try {
+      if (wasOn) { await pushDisable(); await pushRender("Avisos desactivados en este móvil."); }
+      else { await pushEnable(); await pushRender("✓ Activados. En unos segundos te llegará un aviso de prueba."); }
+    } catch (e) {
+      await pushRender(e.message || "No se pudo completar. Prueba otra vez.", true);
+    } finally {
+      btn.disabled = false;
+    }
+  };
+  $("push-test").onclick = async () => {
+    try {
+      const sub = await pushEnsure(pushKey());
+      await pushSend({ sub: sub.toJSON(), test: nowSec() });
+      pushRender("Prueba pedida: te llegará en unos segundos.");
+    } catch (e) { pushRender(e.message || "No se pudo pedir la prueba.", true); }
+  };
 
   // ── Descarga del Gist ──
   function PanelError(code, msg) { const e = new Error(msg); e.code = code; return e; }
@@ -2213,6 +2368,7 @@ function connectLive() {
     if (!chartStarted) { chartStarted = true; refreshChart(); }
     else fetch("/api/history").then((r) => r.json()).then(renderPowerChart).catch(() => {});
     if ($("view-st") && $("view-st").classList.contains("active")) { fetchStats(); fetchSessions(); }
+    pushMaybeRefresh();
   }
 
   // ── Acceso ──
