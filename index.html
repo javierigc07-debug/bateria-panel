@@ -358,21 +358,30 @@
     /* ═══════════════════════════════════════════════════════════════
        TAB 2: ESTADÍSTICAS Y APAGONES
     ═══════════════════════════════════════════════════════════════ */
-    .stats-summary-card {
+    .st-strip {
       background: linear-gradient(135deg, #131722 0%, #1f2738 100%);
       border: 1px solid var(--card-border);
       border-radius: var(--radius-lg);
-      padding: 20px;
-      margin-bottom: 20px;
+      padding: 16px 18px;
+      margin-bottom: 14px;
     }
-    .st-title { font-size: 0.72rem; text-transform: uppercase; color: var(--green-glow); font-weight: 700; }
-    .st-main { font-size: 1.45rem; font-weight: 800; margin: 4px 0 14px; }
-    .st-pills { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-    .st-p { background: rgba(0,0,0,0.5); padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,0.06); }
-    .st-p-num { font-size: 1.25rem; font-weight: 800; color: #fff; }
-    .st-p-lbl { font-size: 0.65rem; color: var(--text-muted); margin-top: 4px; text-transform: uppercase; }
+    .st-strip-title { font-size: 0.72rem; text-transform: uppercase; color: var(--green-glow); font-weight: 700; letter-spacing: 0.04em; margin-bottom: 10px; }
+    .st-kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .st-kpi b { display: block; font-size: 1.35rem; font-weight: 800; color: #fff; letter-spacing: -0.02em; white-space: nowrap; }
+    .st-kpi span { display: block; font-size: 0.64rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; margin-top: 2px; }
 
-    .sessions-list { display: flex; flex-direction: column; gap: 12px; }
+    .hist-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    .hist-filters { display: inline-flex; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 999px; padding: 3px; }
+    .hf-btn {
+      border: 0; background: transparent; color: var(--text-muted);
+      font-family: inherit; font-size: 0.76rem; font-weight: 700;
+      padding: 7px 13px; border-radius: 999px; cursor: pointer;
+    }
+    .hf-btn.active { background: #ffffff; color: #000000; }
+    .hist-refresh { background: none; border: 0; color: var(--text-muted); font-family: inherit; font-size: 0.75rem; font-weight: 600; cursor: pointer; padding: 6px 2px; }
+
+    .sessions-list { display: flex; flex-direction: column; }
+    .sessions-list > .hist-state { margin-top: 14px; }
 
     .hist-state {
       text-align: center;
@@ -400,63 +409,43 @@
       cursor: pointer;
     }
     .hist-retry:hover { border-color: var(--green-glow); color: var(--green-glow); }
-    .session-item {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: var(--radius-md);
-      padding: 14px;
-    }
-    .session-item.discharge { border-left: 4px solid var(--orange-wave); }
-    .session-item.charge { border-left: 4px solid var(--green-glow); }
 
-    .si-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-    .si-badge { font-size: 0.7rem; font-weight: 700; padding: 3px 8px; border-radius: 999px; text-transform: uppercase; }
-    .si-badge.discharge { background: var(--orange-dim); color: var(--orange-wave); }
-    .si-badge.charge { background: var(--green-dim); color: var(--green-glow); }
-    .si-time { font-size: 0.8rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
-    .si-dates {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 7px 10px;
-      margin-bottom: 10px;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      border-radius: var(--radius-sm);
-      color: var(--text-muted);
+    /* Línea de tiempo: un bloque por día, una fila por evento */
+    .ev-day {
+      display: flex; justify-content: space-between; align-items: baseline; gap: 10px;
+      padding: 18px 4px 8px;
+      font-size: 0.72rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #ffffff;
     }
-    .si-date { flex: 1; min-width: 0; }
-    .si-date.end { text-align: right; }
-    .si-date-lbl {
-      display: block;
-      font-size: 0.56rem;
-      font-weight: 700;
-      letter-spacing: 0.09em;
-      text-transform: uppercase;
-      color: var(--text-dim);
-      margin-bottom: 2px;
-    }
-    .si-date-val {
-      display: block;
-      font-size: 0.76rem;
-      font-weight: 700;
-      font-family: 'JetBrains Mono', monospace;
-      color: #ffffff;
-      white-space: nowrap;
-    }
-    .si-date-arrow { color: var(--text-dim); font-size: 0.72rem; flex: 0 0 auto; }
-
-    .si-grid {
+    .ev-day small { font-size: 0.72rem; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--text-muted); white-space: nowrap; }
+    .ev-group { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--radius-md); overflow: hidden; }
+    .ev {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      background: var(--card-bg-sub);
-      padding: 8px;
-      border-radius: var(--radius-sm);
-      text-align: center;
+      grid-template-columns: 34px minmax(0, 1fr) auto;
+      grid-template-areas: "ico main dur" "ico soc soc" "ico meta meta";
+      column-gap: 12px;
+      row-gap: 6px;
+      align-items: center;
+      padding: 13px 14px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
     }
-    .si-g-val { font-size: 0.9rem; font-weight: 800; color: #fff; }
-    .si-g-lbl { font-size: 0.62rem; color: var(--text-dim); text-transform: uppercase; margin-top: 2px; }
+    .ev:first-child { border-top: 0; }
+    .ev-ico { grid-area: ico; align-self: start; width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; }
+    .ev.discharge .ev-ico { background: var(--orange-dim); color: var(--orange-wave); }
+    .ev.charge .ev-ico { background: var(--green-dim); color: var(--green-glow); }
+    .ev-main { grid-area: main; min-width: 0; }
+    .ev-type { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; font-weight: 700; color: #ffffff; }
+    .ev-live { font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; padding: 2px 7px; border-radius: 999px; }
+    .ev.discharge .ev-live { background: var(--orange-dim); color: var(--orange-wave); }
+    .ev.charge .ev-live { background: var(--green-dim); color: var(--green-glow); }
+    .ev-when { margin-top: 2px; font-family: 'JetBrains Mono', monospace; font-size: 0.74rem; color: var(--text-muted); white-space: nowrap; }
+    .ev-dur { grid-area: dur; align-self: start; font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; font-weight: 700; color: #ffffff; text-align: right; white-space: nowrap; }
+    .ev-socrow { grid-area: soc; display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .ev-bar { position: relative; flex: 1; min-width: 50px; height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.07); }
+    .ev-bar i { position: absolute; top: 0; bottom: 0; border-radius: 3px; }
+    .ev.discharge .ev-bar i { background: var(--orange-wave); }
+    .ev.charge .ev-bar i { background: var(--green-glow); }
+    .ev-soc { font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; font-weight: 600; color: #ffffff; white-space: nowrap; }
+    .ev-meta { grid-area: meta; font-size: 0.74rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     /* Modal Settings */
     .modal-wrap {
@@ -507,10 +496,8 @@
         font-size: 0.74rem;
         white-space: nowrap;
       }
-      .si-g-val {
-        font-size: clamp(0.7rem, 3.4vw, 0.9rem);
-        white-space: nowrap;
-      }
+      .st-kpi b { font-size: 1.15rem; }
+      .hf-btn { padding: 7px 10px; }
     }
 
     /* ═══════════════════════════════════════════════════════════════
@@ -635,44 +622,30 @@
       .p-label { font-size: 0.95rem; }
       .p-unit { font-size: 1.2rem; }
 
-      /* Vista historial: resumen fijo a la izquierda, tarjetas en rejilla */
+      /* Vista historial: resumen fijo a la izquierda, línea de tiempo a la derecha */
       #view-st.active {
         display: grid;
-        grid-template-columns: 360px minmax(0, 1fr);
-        grid-template-rows: auto 1fr;
+        grid-template-columns: 300px minmax(0, 960px);
         column-gap: 36px;
         align-items: start;
       }
-      #view-st .stats-summary-card {
-        grid-column: 1;
-        grid-row: 1 / span 2;
-        margin: 0;
-        position: sticky;
-        top: 24px;
-        padding: 24px;
+      #view-st .st-strip { position: sticky; top: 24px; margin: 0; padding: 22px; }
+      #view-st .st-kpis { grid-template-columns: 1fr; gap: 10px; }
+      #view-st .st-kpi {
+        display: flex; align-items: baseline; justify-content: space-between; gap: 14px;
+        background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: var(--radius-sm); padding: 12px 16px;
       }
-      #view-st .st-main { font-size: 1.6rem; }
-      #view-st .st-pills { grid-template-columns: 1fr; gap: 10px; margin-top: 4px; }
-      #view-st .st-p {
-        display: flex;
-        align-items: baseline;
-        justify-content: space-between;
-        gap: 14px;
-        padding: 12px 16px;
+      #view-st .st-kpi b { font-size: 1.6rem; }
+      #view-st .st-kpi span { margin-top: 0; text-align: right; }
+      #view-st .ev {
+        grid-template-columns: 34px minmax(170px, 1.1fr) minmax(170px, 1fr) minmax(150px, 0.8fr) 104px;
+        grid-template-areas: "ico main soc meta dur";
+        column-gap: 20px;
+        padding: 14px 18px;
       }
-      #view-st .st-p-num { font-size: 1.6rem; }
-      #view-st .st-p-lbl { margin-top: 0; text-align: right; }
-      #view-st .sessions-head { grid-column: 2; grid-row: 1; margin-bottom: 14px; }
-      #view-st .sessions-list {
-        grid-column: 2;
-        grid-row: 2;
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-        gap: 14px;
-        align-content: start;
-      }
-      #view-st .session-item { padding: 16px 18px; }
-      #view-st .sessions-list > .hist-state { grid-column: 1 / -1; }
+      #view-st .ev-dur { align-self: center; }
+      #view-st .ev:hover { background: rgba(255, 255, 255, 0.02); }
 
       /* Modal de ajustes más cómodo */
       .modal-box { max-width: 560px; padding: 28px; }
@@ -740,8 +713,8 @@
       .lg-disc i { background: var(--orange-wave); box-shadow: 0 0 8px var(--orange-wave); }
       .chart-svg { display: block; width: 100%; height: 160px; }
 
-      .widget-box, .session-item, .stats-summary-card { transition: border-color 0.2s ease, transform 0.2s ease; }
-      .widget-box:hover, .session-item:hover { border-color: rgba(255, 255, 255, 0.16); transform: translateY(-1px); }
+      .widget-box { transition: border-color 0.2s ease, transform 0.2s ease; }
+      .widget-box:hover { border-color: rgba(255, 255, 255, 0.16); transform: translateY(-1px); }
     }
 
     /* Portátiles y pantallas bajas: compactar para que todo entre sin scroll */
@@ -1342,32 +1315,28 @@
        VISTA 2: HISTORIAL Y CORTES
   ═══════════════════════════════════════════════════════════════ -->
   <section class="view-section" id="view-st">
-    <div class="stats-summary-card">
-      <div class="st-title">Resumen de Respaldo</div>
-      <div class="st-main">Protección contra Apagones</div>
-      <div class="st-pills">
-        <div class="st-p">
-          <div class="st-p-num" id="st-outages">0</div>
-          <div class="st-p-lbl">Cortes</div>
-        </div>
-        <div class="st-p">
-          <div class="st-p-num" id="st-hours">0h</div>
-          <div class="st-p-lbl">Horas Respaldo</div>
-        </div>
-        <div class="st-p">
-          <div class="st-p-num" id="st-kwh">0</div>
-          <div class="st-p-lbl">kWh Entregados</div>
-        </div>
+    <div class="st-strip">
+      <div class="st-strip-title">Resumen de respaldo</div>
+      <div class="st-kpis">
+        <div class="st-kpi"><b id="st-outages">0</b><span>Cortes</span></div>
+        <div class="st-kpi"><b id="st-hours">0 h</b><span>Con batería</span></div>
+        <div class="st-kpi"><b id="st-kwh">0</b><span>kWh entregados</span></div>
       </div>
     </div>
 
-    <div class="sessions-head" style="font-size:0.9rem; font-weight:700; margin-bottom:12px; display:flex; justify-content:space-between;">
-      <span>Historial de Eventos</span>
-      <span style="font-size:0.75rem; color:var(--text-muted); cursor:pointer;" onclick="fetchSessions()">🔄 Actualizar</span>
-    </div>
+    <div class="hist-main">
+      <div class="hist-toolbar">
+        <div class="hist-filters">
+          <button type="button" class="hf-btn active" data-f="all" onclick="setHistFilter('all')">Todos</button>
+          <button type="button" class="hf-btn" data-f="DISCHARGE" onclick="setHistFilter('DISCHARGE')">Cortes</button>
+          <button type="button" class="hf-btn" data-f="CHARGE" onclick="setHistFilter('CHARGE')">Cargas</button>
+        </div>
+        <button type="button" class="hist-refresh" onclick="fetchSessions()">🔄 Actualizar</button>
+      </div>
 
-    <div class="sessions-list" id="sessions-box">
-      <div class="hist-state">Cargando historial…</div>
+      <div class="sessions-list" id="sessions-box">
+        <div class="hist-state">Cargando historial…</div>
+      </div>
     </div>
   </section>
 
@@ -1514,6 +1483,7 @@ function updateUI(d) {
     }
 
     document.getElementById('soc-val').textContent = Math.round(soc) + '%';
+    window.lastSocPct = soc;
 
     // Tiempo Restante
     const rem = d.remaining_time || {};
@@ -1601,13 +1571,17 @@ function updateUI(d) {
   document.getElementById('footer-time').textContent = new Date().toLocaleTimeString();
 }
 
+function fmtNum(v, dec) {
+  return Number(v || 0).toLocaleString('es-ES', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+}
+
 async function fetchStats() {
   try {
     const res = await fetch('/api/stats?_=' + Date.now(), { cache: 'no-store' });
     const s = await res.json();
     document.getElementById('st-outages').textContent = s.total_outages || 0;
-    document.getElementById('st-hours').textContent = (s.total_discharge_hours || 0) + 'h';
-    document.getElementById('st-kwh').textContent = s.total_discharge_kwh || 0;
+    document.getElementById('st-hours').textContent = fmtNum(s.total_discharge_hours, 1) + ' h';
+    document.getElementById('st-kwh').textContent = fmtNum(s.total_discharge_kwh, 2);
   } catch(_) {
     ['st-outages', 'st-hours', 'st-kwh'].forEach(function (id) {
       const el = document.getElementById(id);
@@ -1617,70 +1591,139 @@ async function fetchStats() {
 }
 
 const MESES_CORTOS = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+const DIAS_SEMANA = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
 
-function fmtSessionDate(raw) {
-  if (!raw) return '';
-  const parts = String(raw).trim().split(' ');
-  if (parts.length < 2) return raw;
-  const ymd = parts[0].split('-');
-  if (ymd.length !== 3) return raw;
-  const day = parseInt(ymd[2], 10);
-  const month = MESES_CORTOS[parseInt(ymd[1], 10) - 1] || ymd[1];
-  const year = parseInt(ymd[0], 10) === new Date().getFullYear() ? '' : ' ' + ymd[0];
-  return day + ' ' + month + year + ' \u00b7 ' + parts[1].slice(0, 5);
+// "2026-11-02 08:14:05" (hora local de la Raspberry) → Date
+function parseLocalTs(raw) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/.exec(String(raw || ''));
+  return m ? new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]) : null;
+}
+const hhmm = function (d) { return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+const sameDay = function (a, b) { return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); };
+const shortDate = function (d) {
+  return d.getDate() + ' ' + MESES_CORTOS[d.getMonth()] + (d.getFullYear() !== new Date().getFullYear() ? ' ' + d.getFullYear() : '');
+};
+
+function fmtDur(sec) {
+  sec = Math.max(0, Math.round(sec || 0));
+  if (sec < 60) return '<1 min';
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60);
+  if (!h) return m + ' min';
+  return h + ' h' + (m ? ' ' + String(m).padStart(2, '0') + ' min' : '');
+}
+function fmtEnergy(wh) {
+  wh = Number(wh || 0);
+  return wh < 1000 ? Math.round(wh) + ' Wh' : fmtNum(wh / 1000, 2) + ' kWh';
+}
+function dayTitle(d) {
+  const today = new Date();
+  const yest = new Date(); yest.setDate(today.getDate() - 1);
+  const label = sameDay(d, today) ? 'Hoy' : sameDay(d, yest) ? 'Ayer' : DIAS_SEMANA[d.getDay()];
+  return label + ' · ' + shortDate(d);
+}
+
+const EV_ICON_CHARGE = '<svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4.5 13.5H11l-1 8.5L19.5 10H13l0-8z"/></svg>';
+const EV_ICON_CUT = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v5M15 2v5M7 7h10v4a5 5 0 0 1-10 0V7zM12 16v6"/></svg>';
+
+let histItems = [];
+let histFilter = 'all';
+let histLoaded = false;
+
+function setHistFilter(f) {
+  histFilter = f;
+  renderSessions();
+}
+
+function sessionRow(s) {
+  const isDisc = s.session_type === 'DISCHARGE';
+  const cls = isDisc ? 'discharge' : 'charge';
+  const start = parseLocalTs(s.start_time);
+  const end = parseLocalTs(s.end_time);
+  const live = Boolean(s.is_active) && !end;
+
+  let when = start ? hhmm(start) : '—';
+  if (end) when += ' → ' + hhmm(end) + (start && !sameDay(start, end) ? ' (' + shortDate(end) + ')' : '');
+  else when += live ? ' → ahora' : '';
+
+  const a = Number(s.start_soc || 0);
+  let z = (s.end_soc !== null && s.end_soc !== undefined) ? Number(s.end_soc) : null;
+  if (z === null && live && typeof window.lastSocPct === 'number') z = window.lastSocPct;
+  const lo = Math.max(0, Math.min(a, z === null ? a : z));
+  const hi = Math.min(100, Math.max(a, z === null ? a : z));
+  const socTxt = Math.round(a) + '% → ' + (z === null ? '…' : Math.round(z) + '%');
+
+  const meta = [fmtEnergy(s.energy_wh)];
+  if (s.max_power_w) meta.push('pico ' + Math.round(s.max_power_w) + ' W');
+
+  return '<div class="ev ' + cls + '">' +
+    '<div class="ev-ico">' + (isDisc ? EV_ICON_CUT : EV_ICON_CHARGE) + '</div>' +
+    '<div class="ev-main">' +
+      '<div class="ev-type">' + (isDisc ? 'Corte de luz' : 'Recarga') + (live ? '<span class="ev-live">En curso</span>' : '') + '</div>' +
+      '<div class="ev-when">' + when + '</div>' +
+    '</div>' +
+    '<div class="ev-dur">' + fmtDur(s.duration_sec) + '</div>' +
+    '<div class="ev-socrow"><div class="ev-bar"><i style="left:' + lo.toFixed(1) + '%;width:' + Math.max(1.5, hi - lo).toFixed(1) + '%"></i></div>' +
+      '<span class="ev-soc">' + socTxt + '</span></div>' +
+    '<div class="ev-meta">' + meta.join(' · ') + '</div>' +
+  '</div>';
+}
+
+function renderSessions() {
+  const box = document.getElementById('sessions-box');
+  if (!box) return;
+  document.querySelectorAll('.hf-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.f === histFilter); });
+
+  if (!histItems.length) {
+    box.innerHTML = '<div class="hist-state"><b>Todav\u00eda no hay eventos.</b><small>Se guardar\u00e1n solos cuando el BMS detecte una descarga o una recarga.</small></div>';
+    return;
+  }
+  const items = histItems.filter(function (s) { return histFilter === 'all' || s.session_type === histFilter; });
+  if (!items.length) {
+    box.innerHTML = '<div class="hist-state"><b>' + (histFilter === 'DISCHARGE' ? 'No hay cortes' : 'No hay cargas') +
+      ' entre los \u00faltimos ' + histItems.length + ' eventos.</b></div>';
+    return;
+  }
+
+  // Agrupar por el día en que empezó cada evento (ya vienen del más nuevo al más viejo)
+  const groups = [];
+  items.forEach(function (s) {
+    const d = parseLocalTs(s.start_time);
+    const key = d ? d.toDateString() : 'sin-fecha';
+    let g = groups.length && groups[groups.length - 1].key === key ? groups[groups.length - 1] : null;
+    if (!g) { g = { key: key, date: d, items: [] }; groups.push(g); }
+    g.items.push(s);
+  });
+
+  let html = '';
+  groups.forEach(function (g) {
+    const cuts = g.items.filter(function (s) { return s.session_type === 'DISCHARGE'; });
+    const charges = g.items.length - cuts.length;
+    let summary;
+    if (cuts.length) {
+      const secs = cuts.reduce(function (t, s) { return t + (s.duration_sec || 0); }, 0);
+      summary = cuts.length + (cuts.length === 1 ? ' corte' : ' cortes') + ' · ' + fmtDur(secs);
+    } else {
+      summary = charges + (charges === 1 ? ' carga' : ' cargas');
+    }
+    html += '<div class="ev-day"><span>' + (g.date ? dayTitle(g.date) : 'Sin fecha') + '</span><small>' + summary + '</small></div>';
+    html += '<div class="ev-group">' + g.items.map(sessionRow).join('') + '</div>';
+  });
+  box.innerHTML = html;
 }
 
 async function fetchSessions() {
   const box = document.getElementById('sessions-box');
   if (!box) return;
-  box.innerHTML = '<div class="hist-state">Cargando historial\u2026</div>';
+  if (!histLoaded) box.innerHTML = '<div class="hist-state">Cargando historial\u2026</div>';
 
   try {
     const res = await fetch('/api/sessions?limit=20&_=' + Date.now(), { cache: 'no-store' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const items = await res.json();
     if (!Array.isArray(items)) throw new Error('respuesta inesperada');
-
-    if (items.length === 0) {
-      box.innerHTML = '<div class="hist-state"><b>Todav\u00eda no hay eventos.</b><small>Se guardar\u00e1n solos cuando el BMS detecte una descarga o una recarga.</small></div>';
-      return;
-    }
-
-    let html = '';
-    items.forEach(s => {
-      const isDisc = s.session_type === 'DISCHARGE';
-      const badge = isDisc ? '\u{1F534} Corte / Descarga' : '\u{1F7E2} Recarga';
-      const cls = isDisc ? 'discharge' : 'charge';
-      const mins = Math.floor((s.duration_sec || 0) / 60);
-      const kwh = ((s.energy_wh || 0) / 1000.0).toFixed(2);
-      const startTxt = fmtSessionDate(s.start_time) || '\u2014';
-      const endTxt = s.end_time ? fmtSessionDate(s.end_time) : 'En curso';
-      html += `
-        <div class="session-item ${cls}">
-          <div class="si-head">
-            <span class="si-badge ${cls}">${badge}</span>
-            <span class="si-time">\u23f1\ufe0f ${mins} min</span>
-          </div>
-          <div class="si-dates">
-            <div class="si-date">
-              <span class="si-date-lbl">Inicio</span>
-              <span class="si-date-val">${startTxt}</span>
-            </div>
-            <span class="si-date-arrow">\u27a4</span>
-            <div class="si-date end">
-              <span class="si-date-lbl">Fin</span>
-              <span class="si-date-val">${endTxt}</span>
-            </div>
-          </div>
-          <div class="si-grid">
-            <div><div class="si-g-val">${Math.round(s.start_soc || 0)}% \u27a4 ${s.end_soc ? Math.round(s.end_soc) + '%' : '...'}</div><div class="si-g-lbl">Rango SOC</div></div>
-            <div><div class="si-g-val">${Math.round(s.max_power_w || 0)} W</div><div class="si-g-lbl">Pico Watts</div></div>
-            <div><div class="si-g-val">${kwh} kWh</div><div class="si-g-lbl">Energ\u00eda</div></div>
-          </div>
-        </div>
-      `;
-    });
-    box.innerHTML = html;
+    histItems = items;
+    histLoaded = true;
+    renderSessions();
   } catch (err) {
     box.innerHTML = '';
     const wrap = document.createElement('div');
