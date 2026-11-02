@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="referrer" content="no-referrer" />
+  <meta name="theme-color" content="#000000" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Baterías" />
+  <title>Baterías</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    :root {
+      --bg:          #000000;
+      --card:        #121418;
+      --card-sub:    #181b22;
+      --border:      rgba(255, 255, 255, 0.08);
+      --green:       #00ff88;
+      --green-dim:   rgba(0, 255, 136, 0.14);
+      --cyan:        #00d4ff;
+      --orange:      #ff9800;
+      --orange-dim:  rgba(255, 152, 0, 0.15);
+      --red:         #ff5252;
+      --red-dim:     rgba(255, 82, 82, 0.14);
+      --text:        #ffffff;
+      --muted:       #8a909d;
+      --dim:         #4b5260;
+      --r-lg:        22px;
+      --r-md:        16px;
+      --r-sm:        10px;
+      --accent:      var(--muted);
+      --accent-dim:  rgba(138, 144, 157, 0.14);
+    }
+
+    html { overflow-x: hidden; background: var(--bg); }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      justify-content: center;
+      overflow-x: hidden;
+    }
+    .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+    [hidden] { display: none !important; }
+
+    .viewport {
+      width: 100%;
+      max-width: 480px;
+      padding: calc(14px + env(safe-area-inset-top)) 16px calc(32px + env(safe-area-inset-bottom));
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    /* ── Pantalla de acceso ─────────────────────────────────────── */
+    .lock {
+      min-height: 86vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 22px;
+    }
+    .lock-mark { width: 56px; height: 56px; border-radius: 16px; background: var(--card); border: 1px solid var(--border);
+                 display: grid; place-items: center; }
+    .lock h1 { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.03em; }
+    .lock p.lead { color: var(--muted); font-size: 0.95rem; line-height: 1.5; margin-top: 6px; }
+    .field { display: flex; flex-direction: column; gap: 8px; }
+    .field label { font-size: 0.8rem; font-weight: 700; color: var(--muted); letter-spacing: 0.02em; }
+    .field input[type=password], .field input[type=text] {
+      width: 100%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      padding: 14px 14px;
+      color: var(--text);
+      font: inherit;
+      font-size: 1rem;
+      outline: none;
+    }
+    .field input:focus { border-color: rgba(0, 255, 136, 0.55); box-shadow: 0 0 0 3px var(--green-dim); }
+    .check { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 0.9rem; cursor: pointer; }
+    .check input { width: 18px; height: 18px; accent-color: var(--green); }
+    .btn {
+      appearance: none;
+      border: 0;
+      border-radius: 999px;
+      padding: 14px 18px;
+      font: inherit;
+      font-weight: 800;
+      font-size: 1rem;
+      background: var(--green);
+      color: #00160b;
+      cursor: pointer;
+    }
+    .btn:disabled { opacity: 0.55; cursor: progress; }
+    .btn-ghost {
+      appearance: none;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 9px 14px;
+      font: inherit;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-ghost:active { background: var(--card-sub); }
+    .msg { font-size: 0.9rem; line-height: 1.45; border-radius: var(--r-sm); padding: 12px 14px; }
+    .msg.err { background: var(--red-dim); color: #ffb3b3; }
+    .msg.warn { background: var(--orange-dim); color: #ffd59a; }
+
+    /* ── Cabecera ───────────────────────────────────────────────── */
+    .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-top: 4px; }
+    .top h1 { font-size: 1.35rem; font-weight: 800; letter-spacing: -0.02em; }
+    .fresh { display: inline-flex; align-items: center; gap: 7px; font-size: 0.78rem; font-weight: 700; color: var(--muted); }
+    .fresh .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); }
+    .fresh.stale .dot { background: var(--orange); box-shadow: 0 0 8px var(--orange); }
+    .fresh.stale { color: #ffd59a; }
+
+    /* ── Tarjeta principal ──────────────────────────────────────── */
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 18px; }
+    .hero { display: grid; grid-template-columns: 148px 1fr; gap: 18px; align-items: center; }
+    .ring { position: relative; width: 148px; height: 148px; }
+    .ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+    .ring .track { stroke: var(--card-sub); }
+    .ring .bar { stroke: var(--accent); transition: stroke-dashoffset 0.8s ease, stroke 0.3s; filter: drop-shadow(0 0 6px var(--accent-dim)); }
+    .ring .center { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; }
+    .ring .pct { font-size: 2.3rem; font-weight: 800; letter-spacing: -0.04em; line-height: 1; }
+    .ring .pct small { font-size: 1rem; font-weight: 700; color: var(--muted); margin-left: 1px; }
+    .state-pill {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 6px 11px; border-radius: 999px;
+      background: var(--accent-dim); color: var(--accent);
+      font-size: 0.8rem; font-weight: 800; letter-spacing: 0.01em;
+    }
+    .state-pill .pulse { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+    .state-pill.live .pulse { animation: pulse 1.6s ease-in-out infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+    .hero-side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+    .big-power { font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
+    .big-power small { font-size: 0.95rem; color: var(--muted); font-weight: 700; margin-left: 3px; }
+    .kv-label { font-size: 0.72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+    .remaining { font-size: 1.05rem; font-weight: 800; }
+    .hero-note { margin-top: 14px; color: var(--muted); font-size: 0.88rem; line-height: 1.45; }
+
+    .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .tile { background: var(--card); border: 1px solid var(--border); border-radius: var(--r-md); padding: 12px 10px; min-width: 0; }
+    .tile .v { font-size: 1.02rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tile .l { font-size: 0.68rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 3px; }
+
+    /* ── Gráfica ────────────────────────────────────────────────── */
+    .sec-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+    .sec-head h2 { font-size: 1rem; font-weight: 800; letter-spacing: -0.01em; }
+    .sec-head span { font-size: 0.78rem; color: var(--muted); font-weight: 600; }
+    .readout { font-size: 0.82rem; color: var(--muted); min-height: 1.2em; margin-bottom: 6px; }
+    .readout b { color: var(--text); font-weight: 700; }
+    .chart-wrap { position: relative; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+    .chart-wrap svg { display: block; width: 100%; overflow: visible; }
+    .chart-wrap text { fill: var(--dim); font-size: 10px; font-family: 'JetBrains Mono', ui-monospace, monospace; }
+    .legend { display: flex; gap: 14px; margin-top: 8px; font-size: 0.74rem; color: var(--muted); font-weight: 600; flex-wrap: wrap; }
+    .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+    .empty { color: var(--muted); font-size: 0.9rem; padding: 18px 0; text-align: center; }
+
+    /* ── Sesiones ───────────────────────────────────────────────── */
+    .sessions { list-style: none; display: flex; flex-direction: column; }
+    .sessions li { display: grid; grid-template-columns: 34px 1fr auto; gap: 12px; align-items: center; padding: 12px 0; border-top: 1px solid var(--border); }
+    .sessions li:first-child { border-top: 0; padding-top: 2px; }
+    .s-ico { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; }
+    .s-ico.charge { background: var(--green-dim); color: var(--green); }
+    .s-ico.discharge { background: var(--orange-dim); color: var(--orange); }
+    .s-main { min-width: 0; }
+    .s-title { font-size: 0.92rem; font-weight: 700; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .s-sub { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+    .s-right { text-align: right; }
+    .s-right .s-dur { font-size: 0.92rem; font-weight: 700; }
+    .s-right .s-soc { font-size: 0.76rem; color: var(--muted); margin-top: 2px; }
+    .badge-live { font-size: 0.66rem; font-weight: 800; padding: 2px 7px; border-radius: 999px; background: var(--accent-dim); color: var(--accent); text-transform: uppercase; letter-spacing: 0.05em; }
+
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .stats .tile .v { font-size: 1.15rem; }
+
+    .foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; color: var(--dim); font-size: 0.75rem; padding-top: 4px; }
+    .foot .actions { display: flex; gap: 8px; }
+
+    @media (max-width: 380px) {
+      .hero { grid-template-columns: 124px 1fr; gap: 14px; }
+      .ring { width: 124px; height: 124px; }
+      .ring .pct { font-size: 1.9rem; }
+      .big-power { font-size: 1.6rem; }
+      .grid4 { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <main class="viewport">
+
+    <!-- ═══ Acceso ═══ -->
+    <section class="lock" id="lock" hidden>
+      <div>
+        <div class="lock-mark" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="2.5" y="7" width="17" height="10" rx="2.5" stroke="#00ff88" stroke-width="1.8"/><rect x="20.5" y="10" width="1.8" height="4" rx="0.9" fill="#00ff88"/><path d="M11.6 8.6 8.6 12.4h2.8l-1 3 3.2-3.9h-2.8l.8-2.9z" fill="#00ff88"/></svg>
+        </div>
+        <h1 style="margin-top:18px">Baterías</h1>
+        <p class="lead">Los datos llegan cifrados. Escribe tu contraseña para verlos; se descifran solo en este dispositivo.</p>
+      </div>
+      <form id="lock-form" autocomplete="on" novalidate>
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="field" id="gist-field" hidden>
+            <label for="gist-input">Código del panel</label>
+            <input type="text" id="gist-input" inputmode="text" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="El código de 32 caracteres del enlace" />
+          </div>
+          <input type="text" name="username" autocomplete="username" value="baterias" hidden />
+          <div class="field">
+            <label for="pw-input">Contraseña</label>
+            <input type="password" id="pw-input" autocomplete="current-password" required />
+          </div>
+          <label class="check"><input type="checkbox" id="remember" checked /> Recordar en este dispositivo</label>
+          <div class="msg err" id="lock-err" hidden></div>
+          <button class="btn" id="lock-btn" type="submit">Ver baterías</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ═══ Panel ═══ -->
+    <section id="app" hidden style="display:flex;flex-direction:column;gap:14px">
+      <header class="top">
+        <h1>Baterías</h1>
+        <span class="fresh" id="fresh"><span class="dot"></span><span id="fresh-text">—</span></span>
+      </header>
+
+      <div class="msg warn" id="stale-msg" hidden></div>
+      <div class="msg err" id="net-msg" hidden></div>
+
+      <article class="card">
+        <div class="hero">
+          <div class="ring">
+            <svg viewBox="0 0 120 120" aria-hidden="true">
+              <circle class="track" cx="60" cy="60" r="52" fill="none" stroke-width="10" />
+              <circle class="bar" id="ring-bar" cx="60" cy="60" r="52" fill="none" stroke-width="10" stroke-linecap="round"
+                      stroke-dasharray="326.73" stroke-dashoffset="326.73" />
+            </svg>
+            <div class="center"><div class="pct mono" id="soc">--<small>%</small></div></div>
+          </div>
+          <div class="hero-side">
+            <div><span class="state-pill" id="state-pill"><span class="pulse"></span><span id="state-text">—</span></span></div>
+            <div>
+              <div class="kv-label" id="power-label">Potencia</div>
+              <div class="big-power mono" id="power">--<small>W</small></div>
+            </div>
+            <div id="remaining-box" hidden>
+              <div class="kv-label" id="remaining-label">Tiempo</div>
+              <div class="remaining mono" id="remaining">--</div>
+            </div>
+          </div>
+        </div>
+        <p class="hero-note" id="hero-note" hidden></p>
+      </article>
+
+      <div class="grid4">
+        <div class="tile"><div class="v mono" id="t-volt">--</div><div class="l">Voltaje</div></div>
+        <div class="tile"><div class="v mono" id="t-curr">--</div><div class="l">Corriente</div></div>
+        <div class="tile"><div class="v mono" id="t-temp">--</div><div class="l">Temp.</div></div>
+        <div class="tile"><div class="v mono" id="t-cyc">--</div><div class="l">Ciclos</div></div>
+      </div>
+
+      <article class="card">
+        <div class="sec-head"><h2>Últimas 6 horas</h2><span>toca para ver un punto</span></div>
+        <div class="readout" id="readout">&nbsp;</div>
+        <div class="chart-wrap" id="chart"></div>
+        <div class="legend">
+          <span><i style="background:var(--green)"></i>Carga (%)</span>
+          <span><i style="background:var(--cyan)"></i>Entrando</span>
+          <span><i style="background:var(--orange)"></i>Saliendo</span>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="sec-head"><h2>Cortes y cargas</h2><span>últimos 10</span></div>
+        <ul class="sessions" id="sessions"></ul>
+      </article>
+
+      <article class="card">
+        <div class="sec-head"><h2>Desde que se instaló</h2></div>
+        <div class="stats" id="stats"></div>
+      </article>
+
+      <footer class="foot">
+        <span id="foot-text"></span>
+        <span class="actions">
+          <button class="btn-ghost" id="refresh-btn" type="button">Actualizar</button>
+          <button class="btn-ghost" id="logout-btn" type="button">Salir</button>
+        </span>
+      </footer>
+    </section>
+  </main>
+
+  <script>
+  (() => {
+    "use strict";
+
+    // ── Configuración ────────────────────────────────────────────
+    // El código del Gist NO está en este archivo (el repo es público):
+    // va en el enlace, tras '#', y se recuerda en el dispositivo.
+    const OWNER        = "javierigc07-debug";
+    const GIST_FILE    = "bms.json";
+    const REFRESH_MS   = 60 * 1000;
+    const STALE_SEC    = 40 * 60;          // la Pi publica al menos cada 30 min
+    const K_GIST       = "bateria-panel:gist";
+    const K_KEY        = "bateria-panel:key";
+
+    const $ = (id) => document.getElementById(id);
+    const store = {
+      get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+      set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+      del(k) { try { localStorage.removeItem(k); } catch {} },
+    };
+
+    let gistId = null;
+    let keyBytes = null;      // clave AES derivada (Uint8Array)
+    let keySalt = null;       // sal con la que se derivó
+    let lastData = null;
+    let lastEnvelopeCt = null;
+    let refreshTimer = null;
+    let busy = false;
+
+    // ── Utilidades ───────────────────────────────────────────────
+    const b64dec = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+    const b64enc = (u8) => btoa(String.fromCharCode(...u8));
+    const isGistId = (s) => /^[0-9a-f]{20,40}$/i.test(s || "");
+    const num = (v) => (typeof v === "number" && isFinite(v) ? v : null);
+
+    function fmt(v, digits = 0) {
+      const n = num(v);
+      return n === null ? "--" : n.toLocaleString("es-ES", { minimumFractionDigits: digits, maximumFractionDigits: digits });
+    }
+    function ago(sec) {
+      sec = Math.max(0, Math.round(sec));
+      if (sec < 60) return "ahora mismo";
+      const m = Math.round(sec / 60);
+      if (m < 60) return `hace ${m} min`;
+      const h = Math.floor(m / 60), r = m % 60;
+      if (h < 24) return r ? `hace ${h} h ${r} min` : `hace ${h} h`;
+      const d = Math.floor(h / 24);
+      return d === 1 ? "hace 1 día" : `hace ${d} días`;
+    }
+    function dur(sec) {
+      sec = Math.max(0, Math.round(sec || 0));
+      const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60);
+      if (h && m) return `${h} h ${m} min`;
+      if (h) return `${h} h`;
+      return m ? `${m} min` : `${sec} s`;
+    }
+    // "2026-11-02 10:28:56" (hora local de la Pi) → Date
+    function parseLocal(s) {
+      const m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/.exec(String(s || ""));
+      return m ? new Date(+m[1], m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0)) : null;
+    }
+    const hhmm = (d) => d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+    function dayLabel(d) {
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const that = new Date(d); that.setHours(0, 0, 0, 0);
+      const diff = Math.round((today - that) / 86400000);
+      if (diff === 0) return "Hoy";
+      if (diff === 1) return "Ayer";
+      return d.toLocaleDateString("es-ES", { day: "numeric", month: "short" });
+    }
+
+    // ── Cifrado (igual que remote_publish.py) ───────────────────
+    async function deriveKey(password, salt, iterations) {
+      const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
+      const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt, iterations }, base, 256);
+      return new Uint8Array(bits);
+    }
+    async function decrypt(env, raw) {
+      const key = await crypto.subtle.importKey("raw", raw, "AES-GCM", false, ["decrypt"]);
+      const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64dec(env.iv) }, key, b64dec(env.ct));
+      return JSON.parse(new TextDecoder().decode(pt));
+    }
+
+    // ── Descarga del Gist ────────────────────────────────────────
+    class PanelError extends Error { constructor(code, msg) { super(msg); this.code = code; } }
+
+    async function fetchEnvelope() {
+      // 1) Copia "raw" del Gist: sin límite de consultas. El parámetro ?t= salta la caché
+      //    de GitHub, así que llega la última versión publicada.
+      try {
+        const res = await fetch(`https://gist.githubusercontent.com/${OWNER}/${gistId}/raw/${GIST_FILE}?t=${Date.now()}`, { cache: "no-store" });
+        if (res.ok) {
+          const env = JSON.parse(await res.text());
+          if (env && env.ct && env.iv && env.salt) return env;
+        }
+      } catch { /* se intenta por la API */ }
+      return fetchApi();
+    }
+    async function fetchApi() {
+      // 2) Plan B: API de GitHub (anónima: 60 consultas/hora por conexión).
+      let res;
+      try {
+        res = await fetch(`https://api.github.com/gists/${gistId}`, { cache: "no-cache" });
+      } catch {
+        throw new PanelError("net", "Sin conexión. Comprueba los datos o el wifi del móvil.");
+      }
+      if (res.status === 404) throw new PanelError("nogist", "No existe ningún panel con ese código. Revisa el enlace.");
+      if (res.status === 403 || res.status === 429) throw new PanelError("net", "GitHub está limitando las consultas. Vuelve a intentarlo en unos minutos.");
+      if (!res.ok) throw new PanelError("net", `GitHub respondió ${res.status}. Prueba en un rato.`);
+      const gist = await res.json();
+      const file = gist.files && gist.files[GIST_FILE];
+      if (!file) throw new PanelError("nogist", "El panel existe pero aún no tiene datos.");
+      const text = file.truncated ? await (await fetch(file.raw_url, { cache: "no-store" })).text() : file.content;
+      return JSON.parse(text);
+    }
+
+    // ── Acceso ───────────────────────────────────────────────────
+    function showLock(message) {
+      $("app").hidden = true;
+      $("lock").hidden = false;
+      $("gist-field").hidden = !!gistId;
+      const err = $("lock-err");
+      err.hidden = !message;
+      err.textContent = message || "";
+      stopTimer();
+      setTimeout(() => (gistId ? $("pw-input") : $("gist-input")).focus(), 50);
+    }
+    function showApp() {
+      $("lock").hidden = true;
+      $("app").hidden = false;
+    }
+
+    $("lock-form").addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const btn = $("lock-btn");
+      const pw = $("pw-input").value;
+      if (!gistId) {
+        const g = $("gist-input").value.trim().replace(/^.*#/, "").replace(/^.*\//, "");
+        if (!isGistId(g)) return showLock("Ese código no parece válido: son 32 letras y números.");
+        gistId = g;
+      }
+      if (!pw) return showLock("Escribe la contraseña.");
+      btn.disabled = true;
+      btn.textContent = "Descifrando…";
+      try {
+        const env = await fetchEnvelope();
+        const salt = b64dec(env.salt);
+        const raw = await deriveKey(pw, salt, env.iter || 200000);
+        let data;
+        try { data = await decrypt(env, raw); }
+        catch { throw new PanelError("pw", "Contraseña incorrecta."); }
+        keyBytes = raw; keySalt = env.salt;
+        store.set(K_GIST, gistId);
+        if ($("remember").checked) store.set(K_KEY, JSON.stringify({ salt: env.salt, key: b64enc(raw) }));
+        else store.del(K_KEY);
+        $("pw-input").value = "";
+        lastEnvelopeCt = env.ct;
+        lastData = data;
+        showApp();
+        render(data);
+        startTimer();
+      } catch (e) {
+        if (e.code === "nogist") { gistId = null; store.del(K_GIST); }
+        showLock(e.message || "No se pudo abrir el panel.");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Ver baterías";
+      }
+    });
+
+    $("logout-btn").addEventListener("click", () => {
+      keyBytes = null; keySalt = null; lastData = null;
+      store.del(K_KEY);
+      showLock("");
+    });
+    $("refresh-btn").addEventListener("click", () => refresh(true));
+
+    // ── Actualización periódica ──────────────────────────────────
+    async function refresh(manual = false) {
+      if (busy || !keyBytes) return;
+      busy = true;
+      if (manual) $("refresh-btn").textContent = "…";
+      try {
+        const env = await fetchEnvelope();
+        if (env.salt !== keySalt) {           // se cambió la contraseña en la Raspberry
+          keyBytes = null; store.del(K_KEY);
+          return showLock("La contraseña del panel ha cambiado. Escribe la nueva.");
+        }
+        if (env.ct !== lastEnvelopeCt) {
+          let data;
+          try { data = await decrypt(env, keyBytes); }
+          catch { keyBytes = null; store.del(K_KEY); return showLock("No se pudieron descifrar los datos. Escribe la contraseña de nuevo."); }
+          lastEnvelopeCt = env.ct;
+          lastData = data;
+          render(data);
+        } else {
+          renderFreshness(lastData);
+        }
+        $("net-msg").hidden = true;
+      } catch (e) {
+        if (e.code === "nogist") { store.del(K_GIST); gistId = null; return showLock(e.message); }
+        $("net-msg").hidden = false;
+        $("net-msg").textContent = e.message + (lastData ? " Se muestran los últimos datos recibidos." : "");
+      } finally {
+        busy = false;
+        $("refresh-btn").textContent = "Actualizar";
+      }
+    }
+    function startTimer() {
+      stopTimer();
+      refreshTimer = setInterval(() => { if (document.visibilityState === "visible") refresh(); }, REFRESH_MS);
+    }
+    function stopTimer() { if (refreshTimer) clearInterval(refreshTimer); refreshTimer = null; }
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible" && keyBytes) refresh();
+    });
+    setInterval(() => { if (lastData && !$("app").hidden) renderFreshness(lastData); }, 15000);
+
+    // ── Pintado ──────────────────────────────────────────────────
+    const STATES = {
+      charging:    { text: "Cargando",          color: "var(--green)",  dim: "var(--green-dim)",  live: true },
+      discharging: { text: "Usando batería",    color: "var(--orange)", dim: "var(--orange-dim)", live: true },
+      idle:        { text: "En reposo",         color: "var(--muted)",  dim: "rgba(138,144,157,0.14)", live: false },
+      offline:     { text: "Sin datos del BMS", color: "var(--red)",    dim: "var(--red-dim)",    live: false },
+    };
+
+    function render(d) {
+      const st = STATES[d.state] || STATES.offline;
+      const root = document.documentElement.style;
+      root.setProperty("--accent", st.color);
+      root.setProperty("--accent-dim", st.dim);
+
+      const L = d.latest || {};
+      const soc = num(L.soc_pct);
+      $("soc").innerHTML = (soc === null ? "--" : Math.round(soc)) + "<small>%</small>";
+      const C = 326.73;
+      $("ring-bar").style.strokeDashoffset = soc === null ? C : C * (1 - Math.min(100, Math.max(0, soc)) / 100);
+
+      $("state-text").textContent = st.text;
+      $("state-pill").classList.toggle("live", st.live);
+
+      const pIn = num(L.input_w) || 0, pOut = num(L.output_w) || 0;
+      let power = num(L.power_w), plabel = "Potencia";
+      if (d.state === "charging")    { power = pIn || power; plabel = "Entrando"; }
+      if (d.state === "discharging") { power = pOut || power; plabel = "Saliendo"; }
+      $("power-label").textContent = plabel;
+      $("power").innerHTML = (d.connected ? fmt(power) : "--") + "<small>W</small>";
+
+      const rt = L.remaining_time || {};
+      const showRt = d.connected && (rt.mode === "charging" || rt.mode === "discharging");
+      $("remaining-box").hidden = !showRt;
+      if (showRt) {
+        $("remaining-label").textContent = rt.mode === "charging" ? "Llena en" : "Queda (hasta la reserva)";
+        $("remaining").textContent = `${rt.hours} h ${String(rt.mins).padStart(2, "0")} min`;
+      }
+
+      const note = $("hero-note");
+      if (!d.connected) {
+        note.hidden = false;
+        note.textContent = "La Raspberry está encendida y conectada, pero no recibe datos de la batería. Puede que el BMS esté dormido o el cable RS485 suelto.";
+      } else if (d.state === "discharging") {
+        note.hidden = false;
+        note.textContent = (d.speech && d.speech.session) || "Las baterías están alimentando la casa.";
+      } else {
+        note.hidden = true;
+      }
+
+      $("t-volt").textContent = d.connected ? `${fmt(L.voltage_v, 1)} V` : "--";
+      $("t-curr").textContent = d.connected ? `${fmt(L.current_a, 1)} A` : "--";
+      $("t-temp").textContent = d.connected && num(L.temp1_c) !== null ? `${fmt(L.temp1_c)} °C` : "--";
+      $("t-cyc").textContent = d.connected ? fmt(L.cycles) : "--";
+
+      renderChart(d.history || []);
+      renderSessions(d.sessions || []);
+      renderStats(d.stats || {});
+      renderFreshness(d);
+    }
+
+    function renderFreshness(d) {
+      const age = Date.now() / 1000 - (d.generated_ts || 0);
+      const stale = age > STALE_SEC;
+      $("fresh").classList.toggle("stale", stale);
+      $("fresh-text").textContent = d.generated_ts ? `Actualizado ${ago(age)}` : "Sin fecha";
+      const sm = $("stale-msg");
+      sm.hidden = !stale;
+      if (stale) sm.textContent = `La Raspberry no envía datos desde ${ago(age)}. Puede que esté apagada o sin internet; lo de abajo es lo último que se recibió.`;
+      const gen = d.generated_ts ? new Date(d.generated_ts * 1000) : null;
+      $("foot-text").textContent = gen ? `Datos de las ${hhmm(gen)} · ${dayLabel(gen).toLowerCase()}` : "";
+    }
+
+    // Gráfica: % de carga (línea) + potencia con signo (barras)
+    let chartPts = [];
+    function renderChart(hist) {
+      const wrap = $("chart");
+      chartPts = (hist || []).filter((p) => Array.isArray(p) && p.length >= 3);
+      if (chartPts.length < 2) {
+        wrap.innerHTML = '<p class="empty">Aún no hay datos suficientes para la gráfica.</p>';
+        $("readout").innerHTML = "&nbsp;";
+        return;
+      }
+      const W = Math.max(260, Math.round(wrap.clientWidth || 320));
+      const padL = 30, padR = 6, padT = 8;
+      const H1 = 140, gap = 14, H2 = 52, axis = 18;
+      const H = padT + H1 + gap + H2 + axis;
+      const t0 = chartPts[0][0], t1 = chartPts[chartPts.length - 1][0];
+      const span = Math.max(1, t1 - t0);
+      const x = (t) => padL + ((t - t0) / span) * (W - padL - padR);
+      const y = (s) => padT + (1 - Math.min(100, Math.max(0, s)) / 100) * H1;
+      const maxP = Math.max(100, ...chartPts.map((p) => Math.abs(p[2])));
+      const mid = padT + H1 + gap + H2 / 2;
+      const ph = (p) => (Math.abs(p) / maxP) * (H2 / 2 - 1);
+
+      let svg = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Carga y potencia de las últimas horas">`;
+      svg += `<defs><linearGradient id="g-soc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#00ff88" stop-opacity="0.28"/><stop offset="1" stop-color="#00ff88" stop-opacity="0"/></linearGradient></defs>`;
+      for (const s of [0, 50, 100]) {
+        svg += `<line x1="${padL}" x2="${W - padR}" y1="${y(s)}" y2="${y(s)}" stroke="rgba(255,255,255,${s === 0 ? 0.12 : 0.06})" />`;
+        svg += `<text x="${padL - 6}" y="${y(s) + 3.5}" text-anchor="end">${s}%</text>`;
+      }
+      svg += `<line x1="${padL}" x2="${W - padR}" y1="${mid}" y2="${mid}" stroke="rgba(255,255,255,0.08)" />`;
+      svg += `<text x="${padL - 6}" y="${padT + H1 + gap + 8}" text-anchor="end">W</text>`;
+
+      // Línea de % (se corta si faltan datos más de 15 min)
+      const segs = [];
+      let cur = [];
+      chartPts.forEach((p, i) => {
+        if (i && p[0] - chartPts[i - 1][0] > 15 * 60) { segs.push(cur); cur = []; }
+        cur.push(p);
+      });
+      segs.push(cur);
+      for (const seg of segs) {
+        if (seg.length < 2) continue;
+        const line = seg.map((p, i) => `${i ? "L" : "M"}${x(p[0]).toFixed(1)},${y(p[1]).toFixed(1)}`).join("");
+        svg += `<path d="${line}L${x(seg[seg.length - 1][0]).toFixed(1)},${y(0)}L${x(seg[0][0]).toFixed(1)},${y(0)}Z" fill="url(#g-soc)" />`;
+        svg += `<path d="${line}" fill="none" stroke="#00ff88" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />`;
+      }
+
+      // Barras de potencia
+      const bw = Math.max(1.5, Math.min(6, ((W - padL - padR) / chartPts.length) * 0.7));
+      for (const p of chartPts) {
+        if (!p[2]) continue;
+        const h = Math.max(1.5, ph(p[2]));
+        const yy = p[2] > 0 ? mid - h : mid;
+        svg += `<rect x="${(x(p[0]) - bw / 2).toFixed(1)}" y="${yy.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="1" fill="${p[2] > 0 ? "#00d4ff" : "#ff9800"}" />`;
+      }
+
+      // Horas en el eje
+      const step = span > 4 * 3600 ? 3600 * 2 : 3600;
+      const first = Math.ceil(t0 / step) * step;
+      for (let t = first; t <= t1; t += step) {
+        const d = new Date(t * 1000);
+        const tx = x(t);
+        if (tx < padL + 12 || tx > W - padR - 12) continue;
+        svg += `<text x="${tx.toFixed(1)}" y="${H - 4}" text-anchor="middle">${hhmm(d)}</text>`;
+      }
+
+      svg += `<line id="cursor" x1="0" x2="0" y1="${padT}" y2="${padT + H1 + gap + H2}" stroke="rgba(255,255,255,0.35)" stroke-dasharray="3 3" visibility="hidden" />`;
+      svg += `<circle id="cursor-dot" r="4" fill="#00ff88" stroke="#000" stroke-width="2" visibility="hidden" />`;
+      svg += `</svg>`;
+      wrap.innerHTML = svg;
+
+      const svgEl = wrap.querySelector("svg");
+      const cursor = svgEl.querySelector("#cursor");
+      const dot = svgEl.querySelector("#cursor-dot");
+      const show = (i) => {
+        const p = chartPts[i];
+        const sign = p[2] > 0 ? "+" : "";
+        const what = p[2] > 0 ? "entrando" : p[2] < 0 ? "saliendo" : "";
+        $("readout").innerHTML = `<b>${hhmm(new Date(p[0] * 1000))}</b> · <b>${fmt(p[1])} %</b>` +
+          (p[2] ? ` · <b>${sign}${fmt(p[2])} W</b> ${what}` : " · sin consumo");
+      };
+      const pick = (clientX) => {
+        const r = svgEl.getBoundingClientRect();
+        const px = ((clientX - r.left) / r.width) * W;
+        let best = 0, bd = Infinity;
+        chartPts.forEach((p, i) => { const dd = Math.abs(x(p[0]) - px); if (dd < bd) { bd = dd; best = i; } });
+        const p = chartPts[best];
+        cursor.setAttribute("x1", x(p[0])); cursor.setAttribute("x2", x(p[0]));
+        dot.setAttribute("cx", x(p[0])); dot.setAttribute("cy", y(p[1]));
+        cursor.setAttribute("visibility", "visible"); dot.setAttribute("visibility", "visible");
+        show(best);
+      };
+      const reset = () => {
+        cursor.setAttribute("visibility", "hidden"); dot.setAttribute("visibility", "hidden");
+        show(chartPts.length - 1);
+      };
+      svgEl.addEventListener("pointerdown", (e) => pick(e.clientX));
+      svgEl.addEventListener("pointermove", (e) => { if (e.pointerType === "mouse" || e.buttons) pick(e.clientX); });
+      svgEl.addEventListener("pointerleave", reset);
+      svgEl.addEventListener("pointerup", (e) => { if (e.pointerType !== "mouse") setTimeout(reset, 2500); });
+      reset();
+    }
+
+    const ICON_CHARGE = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4.5 13.5H11l-1 8.5L19.5 10H13l0-8z"/></svg>';
+    const ICON_DISCH  = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg>';
+
+    function renderSessions(list) {
+      const ul = $("sessions");
+      ul.textContent = "";
+      if (!list.length) {
+        const li = document.createElement("li");
+        li.style.display = "block";
+        li.innerHTML = '<p class="empty">Todavía no hay cortes ni cargas registrados.</p>';
+        ul.appendChild(li);
+        return;
+      }
+      for (const s of list) {
+        const charge = s.session_type === "CHARGE";
+        const start = parseLocal(s.start_time);
+        const li = document.createElement("li");
+
+        const ico = document.createElement("div");
+        ico.className = "s-ico " + (charge ? "charge" : "discharge");
+        ico.innerHTML = charge ? ICON_CHARGE : ICON_DISCH;
+
+        const main = document.createElement("div");
+        main.className = "s-main";
+        const title = document.createElement("div");
+        title.className = "s-title";
+        title.textContent = charge ? "Carga" : "Corte de luz";
+        if (s.is_active) {
+          const b = document.createElement("span");
+          b.className = "badge-live";
+          b.style.setProperty("--accent", charge ? "var(--green)" : "var(--orange)");
+          b.style.setProperty("--accent-dim", charge ? "var(--green-dim)" : "var(--orange-dim)");
+          b.textContent = "En curso";
+          title.appendChild(b);
+        }
+        const sub = document.createElement("div");
+        sub.className = "s-sub";
+        const parts = [];
+        if (start) parts.push(`${dayLabel(start)}, ${hhmm(start)}`);
+        if (num(s.energy_wh)) parts.push(`${fmt(s.energy_wh)} Wh`);
+        if (num(s.avg_power_w)) parts.push(`~${fmt(s.avg_power_w)} W`);
+        sub.textContent = parts.join(" · ");
+        main.append(title, sub);
+
+        const right = document.createElement("div");
+        right.className = "s-right";
+        const du = document.createElement("div");
+        du.className = "s-dur mono";
+        du.textContent = dur(s.duration_sec);
+        const so = document.createElement("div");
+        so.className = "s-soc mono";
+        const a = num(s.start_soc), z = num(s.end_soc);
+        so.textContent = a !== null ? `${Math.round(a)}% → ${z !== null ? Math.round(z) + "%" : "…"}` : "";
+        right.append(du, so);
+
+        li.append(ico, main, right);
+        ul.appendChild(li);
+      }
+    }
+
+    function renderStats(st) {
+      const items = [
+        [fmt(st.total_outages), "Cortes"],
+        [`${fmt(st.total_discharge_hours, 1)} h`, "Con batería"],
+        [`${fmt(st.total_discharge_kwh, 1)} kWh`, "Usados"],
+      ];
+      const box = $("stats");
+      box.textContent = "";
+      for (const [v, l] of items) {
+        const t = document.createElement("div");
+        t.className = "tile";
+        const vv = document.createElement("div"); vv.className = "v mono"; vv.textContent = v;
+        const ll = document.createElement("div"); ll.className = "l"; ll.textContent = l;
+        t.append(vv, ll);
+        box.appendChild(t);
+      }
+    }
+
+    let resizeT = null;
+    window.addEventListener("resize", () => {
+      clearTimeout(resizeT);
+      resizeT = setTimeout(() => { if (lastData && !$("app").hidden) renderChart(lastData.history || []); }, 150);
+    });
+
+    // ── Arranque ─────────────────────────────────────────────────
+    async function boot() {
+      if (!window.crypto || !crypto.subtle) {
+        return showLock("Este navegador no puede descifrar los datos. Ábrelo con Chrome o Safari actualizados.");
+      }
+      const fromHash = decodeURIComponent(location.hash.replace(/^#/, "")).trim();
+      if (isGistId(fromHash)) { gistId = fromHash; store.set(K_GIST, fromHash); }
+      else if (isGistId(store.get(K_GIST))) gistId = store.get(K_GIST);
+
+      let saved = null;
+      try { saved = JSON.parse(store.get(K_KEY) || "null"); } catch {}
+      if (!gistId || !saved || !saved.key) return showLock("");
+
+      try {
+        keyBytes = b64dec(saved.key);
+        keySalt = saved.salt;
+        const env = await fetchEnvelope();
+        if (env.salt !== keySalt) { keyBytes = null; store.del(K_KEY); return showLock("La contraseña del panel ha cambiado. Escribe la nueva."); }
+        const data = await decrypt(env, keyBytes);
+        lastEnvelopeCt = env.ct;
+        lastData = data;
+        showApp();
+        render(data);
+        startTimer();
+      } catch (e) {
+        if (e.code === "net") return showLock(e.message);
+        if (e.code === "nogist") { gistId = null; store.del(K_GIST); return showLock(e.message); }
+        keyBytes = null; store.del(K_KEY);
+        showLock("Escribe la contraseña de nuevo.");
+      }
+    }
+    boot();
+  })();
+  </script>
+</body>
+</html>
